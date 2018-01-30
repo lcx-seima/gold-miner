@@ -2,54 +2,54 @@
 > * 原文作者：[Alexander Zlatkov](https://blog.sessionstack.com/@zlatkov?source=post_header_lockup)
 > * 译文出自：[掘金翻译计划](https://github.com/xitu/gold-miner)
 > * 本文永久链接：[https://github.com/xitu/gold-miner/blob/master/TODO/how-javascript-works-the-building-blocks-of-web-workers-5-cases-when-you-should-use-them.md](https://github.com/xitu/gold-miner/blob/master/TODO/how-javascript-works-the-building-blocks-of-web-workers-5-cases-when-you-should-use-them.md)
-> * 译者：
+> * 译者：[刘嘉一](https://github.com/lcx-seima)
 > * 校对者：
 
-# How JavaScript works: The building blocks of Web Workers + 5 cases when you should use them
+# JavaScript 工作原理：Web Workers 的内部构造以及 5 种你应当使用它的场景
 
 ![](https://cdn-images-1.medium.com/max/800/0*b5WMJNTRt9QqN-Zy.jpg)
 
-This is post # 7 of the series dedicated to exploring JavaScript and its building components. In the process of identifying and describing the core elements, we also share some rules of thumb we use when building [SessionStack](https://www.sessionstack.com/?utm_source=medium&utm_medium=source&utm_content=javascript-series-web-workers-intro), a lightweight JavaScript application that has to be robust and highly-performant to help users see and reproduce their web app defects real-time.
+这是探索 JavaScript 及其内建组件系列文章的第 7 篇。在认识和描述这些核心元素的过程中，我们也会分享我们在构建 [SessionStack](https://www.sessionstack.com/?utm_source=medium&utm_medium=source&utm_content=javascript-series-web-workers-intro) 时所遵循的一些经验规则。SessionStack 是一个轻量级 JavaScript 应用，它协助用户们构造出实时性要求高的 Web 应用，因此其自身不仅需要足够健壮还要有不俗的性能表现。
 
-If you missed the previous chapters, you can find them here:
+如果你错过了前面的文章，你可以在下面找到它们：
 
-* A[n overview of the engine, the runtime, and the call stack](https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf?source=collection_home---2------1----------------)
-* [Inside Google’s V8 engine + 5 tips on how to write optimized code](https://blog.sessionstack.com/how-javascript-works-inside-the-v8-engine-5-tips-on-how-to-write-optimized-code-ac089e62b12e?source=collection_home---2------2----------------)
-* [Memory management + how to handle 4 common memory leaks](https://blog.sessionstack.com/how-javascript-works-memory-management-how-to-handle-4-common-memory-leaks-3f28b94cfbec?source=collection_home---2------0----------------)
-* [The event loop and the rise of Async programming + 5 ways to better coding with async/await](https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5)
-* [Deep dive into WebSockets and HTTP/2 with SSE + how to pick the right path](https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7?source=collection_home---4------0----------------)
+* [对引擎、运行时和调用栈的概述](https://juejin.im/post/5a05b4576fb9a04519690d42)
+* [深入 V8 引擎以及 5 个写出更优代码的技巧](https://juejin.im/post/5a102e656fb9a044fd1158c6)
+* [内存管理以及四种常见的内存泄漏的解决方法](https://juejin.im/post/59ca19ca6fb9a00a42477f55)
+* [事件循环和异步编程的崛起以及 5 个如何更好的使用 async/await 编码的技巧](https://juejin.im/post/5a221d35f265da43356291cc)
+* [深入剖析 WebSockets 和拥有 SSE 技术 的 HTTP/2，以及如何在二者中做出正确的选择](https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7?source=collection_home---4------0----------------)
 * [How JavaScript works: A comparison with WebAssembly + why in certain cases it’s better to use it over JavaScript](https://blog.sessionstack.com/how-javascript-works-a-comparison-with-webassembly-why-in-certain-cases-its-better-to-use-it-d80945172d79)
 
-This time we’ll be taking apart Web Workers: we’ll offer an overview, discuss the different types of workers, how their building components come to play together, and what advantages and limitations they offer in different scenarios. Finally, we’ll provide 5 use cases in which Web Workers will be the right choice.
+这一次我们将剖析 Web Workers：在简单概述 Web Workers 后，我们将分别讨论不同类型的 workers 以及它们内部组件的运作方法，同时也会以场景为例说明它们各自的优缺点。在文章的最后，我们将提供最适合使用 Web Workers 的 5 个用例场景。
 
-You should already be familiar with the fact that JavaScript runs on a single thread as we have [discussed it previously](https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf) in great detail. JavaScript, however, gives developers the opportunity to write asynchronous code too.
+我们在 [之前的文章](https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf) 中已经详尽地讨论了 JavaScript 的单线程运行机制，你应当对此已经了然于胸。即便如此，JavaScript 也允许开发者在单线程模型上书写异步代码。
 
-#### Limitations of Async programming
+#### 异步编程的 “天花板”
 
-We have discussed [async programming](https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5?source=---------2----------------) previously and when it should be used.
+我们已经讨论过了 [异步编程](https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5?source=---------2----------------) 的概念及其使用场景。
 
-Async programming enables your app UI to be responsive, by “scheduling” parts of the code to be executed a bit later in the event loop, thus allowing the UI rendering to be performed first.
+异步编程通过把部分代码 “放置” 到事件循环较后的时间点执行，保证了 UI 渲染始终处于较高的优先级，这样你的 UI 就不会出现卡顿无响应的情况。
 
-A good use case for async programming is making AJAX requests. Since requests can take a lot of time, they can be made asynchronously, and while the client is waiting for a response, other code can be executed.
+AJAX 请求是异步编程的最佳实践之一。通常网络请求不会在短时间内得到响应，因此异步的网络请求能让客户端在等待响应结果的同时执行其他业务代码。
 
 ```
-// This is assuming that you're using jQuery
+// 假设你使用的是 jQuery
 jQuery.ajax({
     url: 'https://api.example.com/endpoint',
     success: function(response) {
-        // Code to be executed when a response arrives.
+        // 正确响应后需要执行的代码
     }
 });
 ```
 
-This, however, poses a problem — requests are handled by the WEB API of the browser, but how can other code be made asynchronous? For example, what if the code that is inside the success callback is very CPU intensive:
+当然这里有个问题，上例能够进行异步请求是依靠了浏览器提供的 API，其他代码又该如何实现异步执行呢？例如，在上例 success 回调函数中存在着 CPU 密集型计算：
 
 ```
 
 var result = performCPUIntensiveCalculation();
 ```
 
-If the `performCPUIntensiveCalculation` is not an HTTP request but a blocking code (e.g. a huge `for` loop), there is no way to free up the event loop and unblock the UI of the browser — it will freeze and be unresponsive to the user.
+假如 `performCPUIntensiveCalculation` is not an HTTP request but a blocking code (e.g. a huge `for` loop), there is no way to free up the event loop and unblock the UI of the browser — it will freeze and be unresponsive to the user.
 
 This means that asynchronous functions solve only a small part of the single-thread limitations of the JavaScript language.
 
