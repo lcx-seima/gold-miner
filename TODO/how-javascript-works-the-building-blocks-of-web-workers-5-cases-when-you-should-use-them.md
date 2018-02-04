@@ -49,13 +49,13 @@ jQuery.ajax({
 var result = performCPUIntensiveCalculation();
 ```
 
-假如 `performCPUIntensiveCalculation` is not an HTTP request but a blocking code (e.g. a huge `for` loop), there is no way to free up the event loop and unblock the UI of the browser — it will freeze and be unresponsive to the user.
+假如 `performCPUIntensiveCalculation` 不是一个 HTTP 请求，而是一段可以阻塞线程的代码（例：一段巨型 `for` 循环代码）。这样会使 event loop 不堪重负，浏览器 UI 也随之阻塞 —— 用户将面对卡顿无响应的网页。
 
-This means that asynchronous functions solve only a small part of the single-thread limitations of the JavaScript language.
+这就说明了使用异步函数只能解决 JavaScript 单线程模型带来的一小部分问题。
 
-In some cases, you can achieve good results in unblocking the UI from longer-running computations by using `setTimeout.` For example, by batching a complex computation in separate `setTimeout` calls, you can put them on separate “locations” in the event loop and this way buy time for the UI rendering/responsiveness to be performed.
+在一些因大量计算引起的 UI 阻塞问题中，使用 `setTimeout` 来解决阻塞的效果还不错。例如，我们可以把一系列的复杂计算分批放到单独的 `setTimeout` 中执行，这样做等于是把连续的计算分散到了 event loop 中的不同位置，以此为 UI 的渲染和事件响应让出了时间。
 
-Let’s take a look at a simple function that calculates the average of a numeric array:
+让我们来看看一个简单的函数，它用于计算数值型数组的均值：
 
 ```
 
@@ -76,7 +76,7 @@ function average(numbers) {
 }
 ```
 
-This is how you can rewrite the code above and “emulate” asynchronicity:
+下面是对上方代码的一个重写，使其获得了异步性：
 
 ```
 function averageAsync(numbers, callback) {
@@ -89,13 +89,13 @@ function averageAsync(numbers, callback) {
 
     function calculateSumAsync(i) {
         if (i < len) {
-            // Put the next function call on the event loop.
+            // 把下一次函数调用放入 event loop
             setTimeout(function() {
                 sum += numbers[i];
                 calculateSumAsync(i + 1);
             }, 0);
         } else {
-            // The end of the array is reached so we're invoking the callback.
+            // 计算完数组中所有元素后，调用回调函数返回结果
             callback(sum / len);
         }
     }
@@ -104,42 +104,42 @@ function averageAsync(numbers, callback) {
 }
 ```
 
-This will make use of the `setTimeout` function which will add each step of the calculation further down the event loop. Between each calculation, there will be enough time for other calculations to take place, necessary to unfreeze the browser.
+通过使用 `setTimeout` 可以把每一步计算都放置到 event loop 较后的时间点执行。在每两次的计算间隔，event loop 便会有足够的时间执行其他的计算，从而保证浏览器不会一 ”冻“ 不动。
 
-#### Web Workers will save the day
+#### 力挽狂澜的 Web Worker
 
-[HTML5](https://www.w3schools.com/html/html5_intro.asp) has brought us lots of great things out of the box, including:
+[HTML5](https://www.w3schools.com/html/html5_intro.asp) 已经提供了不少开箱即用的好东西，包括：
 
-* SSE (which we have described and compared to WebSockets in a [previous post](https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7))
-* Geolocation
-* Application cache
-* Local Storage
-* Drag and Drop
-* **Web Workers**
+* SSE （在 [上一篇文章](https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7) 中已经谈过它的特性并与 WebSocket 进行了对比)
+* 地理信息
+* 应用缓存
+* LocalStorage
+* 拖放手势
+* **Web Worker**
 
-Web Workers are lightweight, in-browser **threads** that can be used to execute JavaScript code without blocking the event loop.
+Web Worker 是内建在浏览器中的轻量级 **线程**，使用它执行 JavaScript 代码不会阻塞 event loop。
 
-This is truly amazing. The whole paradigm of JavaScript is based on the idea of single-threaded environment but here come Web Workers which remove (partially) this limitation.
+非常神奇吧，本来 JavaScript 中的所有范例都是基于单线程模型实现的，但这里的 Web Worker 却（在一定程度上）打破了这一限制。
 
-Web Workers allow developers to put long-running and computationally intensive tasks on the background without blocking the UI, making your app even more responsive. What’s more, no tricks with the `setTimeout` are needed in order to hack your way around the event loop.
+从此开发者可以远离 UI 阻塞的困扰，通过把一些执行时间长、计算密集型的任务交由 Web Worker 放到后台完成，使他们应用的响应变得更加迅速。更重要的是，我们再也不需要对 event loop 施加任何的 `setTimeout` 黑魔法。
 
-Here is a simple [demo](http://afshinm.github.io/50k/) that shows the difference between sorting an array with and without Web Workers.
+这里有一个简单的数组排序 [demo](http://afshinm.github.io/50k/) ，其中对比了使用 Web Worker 和不使用 Web Worker 时的区别。
 
-#### **Overview of Web Workers**
+#### **Web Worker 概览**
 
-Web Workers allow you to do things like firing up long-running scripts to handle computationally intensive tasks, but without blocking the UI. In fact, it all takes place in parallel . Web Workers are truly multi-threaded.
+Web Worker 允许你在执行大量计算密集型任务时，还不阻塞 UI 进程的执行。事实上，二者互不不阻塞的原因就是它们是并行执行的，可以看出 Web Worker 是货真价实的多线程。
 
-You might say — “Wasn’t JavaScript a single-threaded language?”.
+你可能想说 — ”JavaScript 不是一个在单线程上执行的语言吗？“。
 
-This should be your ‘aha!’ moment when you realize that JavaScript is a language, which doesn’t define a threading model. Web Workers are not part of JavaScript, they’re a browser feature which can be accessed through JavaScript. Most browsers have historically been single-threaded (this has, of course, changed), and most JavaScript implementations happen in the browser. Web Workers are not implemented in Node.JS — it has a concept of “cluster” or “child_process” which is a bit different.
+你可能会惊讶 JavaScript 作为一门编程语言，却没有定义任何的线程模型。因此 Web Worker 并不属于 JavaScript 语言的一部分，它仅仅是浏览器提供的一项特性，只是它使用了 JavaScript 作为访问中介罢了。过往的众多浏览器都是单线程程序（以前的理所当然，现在也有了些许变化），并且浏览器一直以来也是 JavaScript 主要的运行环境。对比在 Node.JS 中就没有 Web Worker 的相关实现 — 虽然 Web Worker 对应着 Node.JS 中的 “cluster” 或 “child_process” 概念，不过它们还是有所区别的。
 
-It’s worth noting that the [specification](http://www.whatwg.org/specs/web-workers/current-work/) mentions three types of Web Workers:
+值得注意的是，Web Worker 的 [定义](http://www.whatwg.org/specs/web-workers/current-work/) 中一共包含了 3 种类型的 Worker：
 
-* [Dedicated Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
-* [Shared Workers](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker)
-* [Service workers](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker_API)
+* [Dedicated Worker（专用 Worker）](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
+* [Shared Worker（共享 Worker）](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker)
+* [Service worker（服务 Worker）](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker_API)
 
-#### Dedicated Workers
+#### Dedicated Worker（专用 Worker）
 
 Dedicated Web Workers are instantiated by the main process and can only communicate with it.
 
@@ -147,7 +147,7 @@ Dedicated Web Workers are instantiated by the main process and can only communic
 
 Dedicated Workers browser support
 
-#### Shared Workers
+#### Shared Worker（共享 Worker）
 
 Shared workers can be reached by all processes running on the same origin (different browser tabs, iframes or other shared workers).
 
@@ -155,7 +155,7 @@ Shared workers can be reached by all processes running on the same origin (diffe
 
 Shared Workers browser support
 
-#### Service Workers
+#### Service worker（服务 Worker）
 
 A Service Worker is an event-driven worker registered against an origin and a path. It can control the web page/site it is associated with, intercepting and modifying the navigation and resource requests, and caching resources in a very granular fashion to give you great control over how your app behaves in certain situations (e.g. when the network is not available.)
 
