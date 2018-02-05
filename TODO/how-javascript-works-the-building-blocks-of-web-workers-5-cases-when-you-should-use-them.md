@@ -141,33 +141,33 @@ Web Worker 允许你在执行大量计算密集型任务时，还不阻塞 UI �
 
 #### Dedicated Worker（专用 Worker）
 
-Dedicated Web Workers are instantiated by the main process and can only communicate with it.
+Dedicated Worker 由主线程实例化且只能与它通信。
 
 ![](https://cdn-images-1.medium.com/max/800/1*ya4zMDfbNUflXhzKz9EBIw.png)
 
-Dedicated Workers browser support
+Dedicated Worker 浏览器兼容性一览
 
 #### Shared Worker（共享 Worker）
 
-Shared workers can be reached by all processes running on the same origin (different browser tabs, iframes or other shared workers).
+Shared Worker 可以被同一域（浏览器中不同的 tab、iframe 或其他 Shared Worker）下的所有线程访问。
 
 ![](https://cdn-images-1.medium.com/max/800/1*lzOIevUBVy5eWyf2kHf--w.png)
 
-Shared Workers browser support
+Shared Worker 浏览器兼容一览
 
 #### Service worker（服务 Worker）
 
-A Service Worker is an event-driven worker registered against an origin and a path. It can control the web page/site it is associated with, intercepting and modifying the navigation and resource requests, and caching resources in a very granular fashion to give you great control over how your app behaves in certain situations (e.g. when the network is not available.)
+Service Worker 是一个事件驱动型 Worker，它的初始化注册需要网页/站点的 origin 和路径信息。一个注册好的 Service Worker 可以控制相关网页/网站的导航、资源请求以及进行粒度化的资源缓存操作，因此你可以极好地控制应用在特定环境下的表现（如：无网络可用时）。
 
 ![](https://cdn-images-1.medium.com/max/800/1*6o2TRDmrJlS97vh1wEjLYw.png)
 
-Service Workers browser support.
+Service Worker 浏览器兼容一览
 
-In this post, we’ll focus on Dedicated Workers and refer to them as “Web Workers” or “Workers”.
+在本文中，我们主要讨论 Dedicated Worker，后文简称为 ”Web Worker“ 或 “Worker”。
 
-#### How Web Workers work
+#### Web Worker 工作原理
 
-Web Workers are implemented as `.js` files which are included via asynchronous HTTP requests in your page. These requests are completely hidden from you by the [Web Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API).
+Web Worker 最终实现为一系列的 `.js` 文件，网页会通过异步 HTTP 请求加载它们。当然 [Web Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) 包办了这一切，上述过程对使用者完全无感。
 
 Workers utilize thread-like message passing to achieve parallelism. They’re perfect for keeping your UI up-to-date, performant, and responsive for users.
 
