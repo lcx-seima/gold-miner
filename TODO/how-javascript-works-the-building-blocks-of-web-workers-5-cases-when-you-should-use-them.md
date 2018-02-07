@@ -55,7 +55,7 @@ var result = performCPUIntensiveCalculation();
 
 在一些因大量计算引起的 UI 阻塞问题中，使用 `setTimeout` 来解决阻塞的效果还不错。例如，我们可以把一系列的复杂计算分批放到单独的 `setTimeout` 中执行，这样做等于是把连续的计算分散到了 event loop 中的不同位置，以此为 UI 的渲染和事件响应让出了时间。
 
-让我们来看看一个简单的函数，它用于计算数值型数组的均值：
+让我们来看看一个简单的函数，它被用于计算数值型数组的均值：
 
 ```
 
@@ -167,38 +167,38 @@ Service Worker 浏览器兼容一览
 
 #### Web Worker 工作原理
 
-Web Worker 最终实现为一系列的 `.js` 文件，网页会通过异步 HTTP 请求加载它们。当然 [Web Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) 包办了这一切，上述过程对使用者完全无感。
+Web Worker 最终实现保存为一系列的 `.js` 文件，网页会通过异步 HTTP 请求来加载它们。当然 [Web Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) 已经包办了这一切，上述加载对使用者完全无感。
 
-Workers utilize thread-like message passing to achieve parallelism. They’re perfect for keeping your UI up-to-date, performant, and responsive for users.
+Worker 利用类似线程的消息机制保持了与主线程的平行，它是提升你应用 UI 体验的不二人选，使用 Worker 保证了 UI 渲染的实时性、高性能和快速响应。
 
-Web Workers run in an isolated thread in the browser. As a result, the code that they execute needs to be contained in a **separate file**. That’s very important to remember.
+Web Worker 是运行在浏览器内部的一条独立线程，因此需要使用 Web Worker 运行的代码块也必须存放在一个 **独立文件** 中。这一点需要牢记在心。
 
-Let’s see how a basic worker is created:
+让我们看看，如何创建一个基础 Worker：
 
 ```
 var worker = new Worker('task.js');
 ```
 
-If the “task.js” file exists and is accessible, the browser will spawn a new thread which downloads the file asynchronously. Right after the download is completed, it will be executed and the worker will begin.
-In case the provided path to the file returns a 404, the worker will fail silently.
+如果此处的 “task.js” 存在且能被访问，那么浏览器会创建一个新的线程去异步地下载源代码文件。一旦下载完成，代码将立刻执行，此时 Worker 也就开始了它的工作。
+如果提供的代码文件不存在返回 404，那么 Worker 会静默失败并不抛出异常。
 
-In order to start the created worker, you need to invoke the `postMessage` method:
+为了启动创建好的 Worker，你需要显式地调用 `postMessage` 方法：
 
 ```
 worker.postMessage();
 ```
 
-#### Web Worker communication
+#### Web Worker 通信
 
-In order to communicate between a Web Worker and the page that created it, you need to use the `postMessage` method or a [Broadcast Channel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel).
+为了使创建好的 Worker 和创建它的页面能够通信，你需要使用 `postMessage` 方法或 [Broadcast Channel（广播通道）](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel).
 
-#### The postMessage method
+#### 使用 postMessage 方法
 
-Newer browsers support a `JSON` object as a first parameter to the method while older browsers support just a `string`.
+在较新的浏览器中，postMessage 方法支持 `JSON` 对象作为函数的第一个入参，但是在旧版本浏览器中它还是只支持 `string`。
 
-Let’s see an example of how the page that creates a worker can communicate back and forth with it, by passing a JSON object as a more “complicated” example. Passing a string is quite the same.
+下面的 demo 会展示 Worker 是如何与创建它的页面进行通信的，同时我们将使用 JSON 对象作为通信体，让这个 demo 看起来稍微 “复杂” 一点。若改为传递的是字符串，方法也不言而喻了。
 
-Let’s take a look at the following HTML page (or part of it to be more precise):
+让我们看看下面的 HTML 页面（或者准确地说是片段）：
 
 ```
 <button onclick="startComputation()">Start computation</button>
@@ -215,14 +215,14 @@ Let’s take a look at the following HTML page (or part of it to be more precise
 </script>
 ```
 
-And this is how our worker script will look like:
+这部分则是 Worker 脚本中的内容：
 
 ```
 self.addEventListener('message', function(e) {
   var data = e.data;
   switch (data.cmd) {
     case 'average':
-      var result = calculateAverage(data); // Some function that calculates the average from the numeric array.
+      var result = calculateAverage(data); // 一个计算数值型数组元素均值的函数
       self.postMessage(result);
       break;
     default:
@@ -231,40 +231,39 @@ self.addEventListener('message', function(e) {
 }, false);
 ```
 
-When the button is clicked, `postMessage` will be called from the main page. The `worker.postMessage` line passes the `JSON` object to the worker, adding `cmd` and `data` keys with their respective values. The worker will handle that message through the defined `message` handler.
+当主页面中的 button 被按下，触发了 `postMessage` 的调用。`worker.postMessage` 这行代码会传递一个 `JSON` 对象给Worker，对象中包含了 `cmd` 和 `data` 两个键以及它们对应的值。相应的，Worker 会通过定义的 `message` 响应方法拿到和处理上面传递过来的消息内容。
 
-When the message arrives, the actual computing is being performed in the worker, without blocking the event loop. The worker is checking the passed event `e` and executes just like a standard JavaScript function. When it’s done, the result is passed back to the main page.
+当消息到达 Worker 后，实际的计算便开始运行，这样完全不会阻塞 event loop。在此过程中，Worker 只会检查传递来的事件 `e`，然后像往常执行 JavaScript 函数一样继续执行。当最终执行完成，执行结果会回传回主页面。
 
-In the context of a worker, both the `self` and `this` reference the global scope for the worker.
+在 Worker 的执行上下文中，`self` 和 `this` 都指向 Worker 的全局作用域。
 
-> There are two ways to stop a worker: by calling `worker.terminate()` from the main page or by calling `self.close()` inside of the worker itself.
+> 有两种停止 Worker 的方法：1、在主页面中显示地调用 `worker.terminate()` ；2、在脚本中调用 `self.close()` 让 Worker 做个 “自我了断”。
 
-#### Broadcast Channel
+#### Broadcast Channel（广播通道）
 
-The [Broadcast Channel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel) is a more general API for communication. It lets us broadcast messages to all contexts sharing the same origin. All browser tabs, iframes, or workers served from the same origin can emit and receive messages:
+[Broadcast Channel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel) 是更纯粹地为通信而生的 API。它允许我们在同域下的所有的上下文中发送和接收消息，包括浏览器 tab、iframe 和 Worker：
 
 ```
-// Connection to a broadcast channel
+// 创建一个连接到 Broadcast Channel
 var bc = new BroadcastChannel('test_channel');
 
-// Example of sending of a simple message
+// 发送一段简单的消息
 bc.postMessage('This is a test message.');
 
-// Example of a simple event handler that only
-// logs the message to the console
+// 在 handler 中接收并打印消息到终端
 bc.onmessage = function (e) { 
   console.log(e.data); 
 }
 
-// Disconnect the channel
+// 断开与 Broadcast Channel 的连接
 bc.close()
 ```
 
-And visually, you can see what Broadcast Channels look like to make it more clear:
+下图会帮助你理解 Broadcast Channel 的工作原理：
 
 ![](https://cdn-images-1.medium.com/max/800/1*NVT6WbNrH_mQL64--b-l1Q.png)
 
-Broadcast Channel has more limited browser support though:
+Broadcast Channel 会有更严格的浏览器兼容限制：
 
 ![](https://cdn-images-1.medium.com/max/800/1*81mCsOzyJj-HfQ1lP_033w.png)
 
