@@ -271,33 +271,33 @@ bc.close()
 
 一共有 2 种给 Web Worker 发送消息的方法：
 
-* **拷贝消息：** the message is serialized, copied, sent over, and then de-serialized at the other end. The page and worker do not share the same instance, so the end result is that a duplicate is created on each pass. Most browsers implement this feature by automatically JSON encoding/decoding the value at either end. As expected, these data operations add significant overhead to the message transmission. The bigger the message, the longer it takes to be sent.
-* **传递消息：** this means that the original sender can no longer use it once sent. Transferring data is almost instantaneous. The limitation is that only [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) is transferable.
+* **拷贝消息：** 这种方法下消息会被序列化、拷贝然后再发送出去，接收方接收后则进行反序列化取得消息。因此上例中的页面和 Worker 不会共享同一个消息实例，它们之间每发送一次消息就会多创建一个消息的副本。大多数浏览器都采用这样的消息发送方法，并且会在发送和接收端自动进行 JSON 编码/解码。如你所预料的，这些数据处理会给消息传送带来不小的负担。传送的消息越大，时间开销就越大。
+* **传递消息：** 使用这种方法意味着消息发送者一旦成功发送消息后，就再也无法使用发出的消息数据了。消息的传送几乎不耗费任何时间，美中不足的是只有 [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) 支持以这种方式发送。
 
-#### Features available to Web Workers
+#### Web Worker 中支持的 JavaScript 特性
 
-Web Workers have access **only to a subset** of JavaScript features due to their multi-threaded nature. Here’s the list of features:
+因为 Web Worker 的多线程天性使然，它只能访问 **一小撮** JavaScript 提供的特性，列表如下：
 
-* The `navigator` object
-* The `location` object (read-only)
+* `navigator` 对象
+* `location` 对象（只读）
 * `XMLHttpRequest`
-* `setTimeout()/clearTimeout()` and `setInterval()/clearInterval()`
-* The [Application Cache](https://www.html5rocks.com/tutorials/appcache/beginner/)
-* Importing external scripts using `importScripts()`
-* [Creating other web workers](https://www.html5rocks.com/en/tutorials/workers/basics/#toc-enviornment-subworkers)
+* `setTimeout()/clearTimeout()` 与 `setInterval()/clearInterval()`
+* [应用缓存](https://www.html5rocks.com/tutorials/appcache/beginner/)
+* 使用 `importScripts()` 引入外部 script
+* [创建其他的 Web Worker](https://www.html5rocks.com/en/tutorials/workers/basics/#toc-enviornment-subworkers)
 
-#### Web Worker limitations
+#### Web Worker 的局限性
 
-Sadly, Web Workers don’t have access to some very crucial JavaScript features:
+令人遗憾的是 Web Worker 无法访问一些非常重要的 JavaScript 特性：
 
-* The DOM (it’s not thread-safe)
-* The `window` object
-* The `document` object
-* The `parent` object
+* DOM 元素（访问不是线程安全的）
+* `window` 对象
+* `document` 对象
+* `parent` 对象
 
-This means that a Web Worker can’t manipulate the DOM (and thus the UI). It can be tricky at times, but once you learn how to properly use Web Workers, you’ll start using them as separate “computing machines” while all the UI changes will take place in your page code. The Workers will do all the heavy lifting for you and once the jobs are done, you’ll pass the results to the page which makes the necessary changes to the UI.
+这意味着 Web Worker 不能做任何的 DOM 操作（也就是 UI 层面的工作）。刚开始这会显得略微棘手，不过一旦你学会了如何正确使用 Web Worker，你就只会把它用作单独的 ”计算机器“ ，因此 UI 变更只会发生在页面代码中。你可以把所有的脏活累活交给 Web Worker 完成，再将它劳作的结果传到页面并在那里进行必要的 UI 操作。
 
-#### Handling errors
+#### 异常处理
 
 As with any JavaScript code, you’ll want to handle any errors that are thrown in your Web Workers. If an error occurs while a worker is executing, the `ErrorEvent` is fired. The interface contains three useful properties for figuring out what went wrong:
 
