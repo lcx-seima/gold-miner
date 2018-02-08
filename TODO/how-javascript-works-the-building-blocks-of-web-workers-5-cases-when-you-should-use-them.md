@@ -263,16 +263,16 @@ bc.close()
 
 ![](https://cdn-images-1.medium.com/max/800/1*NVT6WbNrH_mQL64--b-l1Q.png)
 
-Broadcast Channel 会有更严格的浏览器兼容限制：
+使用 Broadcast Channel 会有更严格的浏览器兼容限制：
 
 ![](https://cdn-images-1.medium.com/max/800/1*81mCsOzyJj-HfQ1lP_033w.png)
 
-#### The size of messages
+#### 消息的大小
 
-There are 2 ways to send messages to Web Workers:
+一共有 2 种给 Web Worker 发送消息的方法：
 
-* **Copying the message:** the message is serialized, copied, sent over, and then de-serialized at the other end. The page and worker do not share the same instance, so the end result is that a duplicate is created on each pass. Most browsers implement this feature by automatically JSON encoding/decoding the value at either end. As expected, these data operations add significant overhead to the message transmission. The bigger the message, the longer it takes to be sent.
-* **Transferring the message:** this means that the original sender can no longer use it once sent. Transferring data is almost instantaneous. The limitation is that only [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) is transferable.
+* **拷贝消息：** the message is serialized, copied, sent over, and then de-serialized at the other end. The page and worker do not share the same instance, so the end result is that a duplicate is created on each pass. Most browsers implement this feature by automatically JSON encoding/decoding the value at either end. As expected, these data operations add significant overhead to the message transmission. The bigger the message, the longer it takes to be sent.
+* **传递消息：** this means that the original sender can no longer use it once sent. Transferring data is almost instantaneous. The limitation is that only [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) is transferable.
 
 #### Features available to Web Workers
 
