@@ -299,13 +299,13 @@ bc.close()
 
 #### 异常处理
 
-As with any JavaScript code, you’ll want to handle any errors that are thrown in your Web Workers. If an error occurs while a worker is executing, the `ErrorEvent` is fired. The interface contains three useful properties for figuring out what went wrong:
+像对待任何 JavaScript 代码一样，你希望处理 Web Worker 抛出的任何错误。当 Worker 在运行时发生错误，它会触发 `ErrorEvent` 事件。该接口包含 3 个有用的属性，它们能帮助你定位代码出错的原因：
 
-* **filename** - the name of the worker script that caused the error
-* **lineno** - the line number where the error occurred
-* **message** - a description of the error
+* **filename** - 发生错误的 script 文件名
+* **lineno** - 发生错误的代码行号
+* **message** - 错误信息
 
-This is an example:
+这有一个例子：
 
 ```
 function onError(e) {
@@ -316,20 +316,20 @@ function onError(e) {
 
 var worker = new Worker('workerWithError.js');
 worker.addEventListener('error', onError, false);
-worker.postMessage(); // Start worker without a message.
+worker.postMessage(); // 不传递消息仅启动 Worker
 ```
 
 ```
 self.addEventListener('message', function(e) {
-  postMessage(x * 2); // Intentional error. 'x' is not defined.
+  postMessage(x * 2); // 此行故意使用了未声明的变量 'x'
 };
 ```
 
-Here, you can see that we created a worker and started listening for the `error` event.
+可以看到，我们在这儿创建了一个 Worker 并监听着它发出的 `error` 事件。
 
-Inside the worker (in `workerWithError.js`) we create an intentional exception by multiplying `x` by 2 while `x` is not defined in that scope. The exception is propagated to the initial script and `onError` is being invoked with information about the error.
+通过使用一个在作用域内未定义的变量 `x` 作乘法，我们在 Worker 内部（`workerWithError.js` 文件内）故意制造了一个异常。这个异常会被传递到最初创建 Worker 的 scrpit 中，同时调用 `onError` 函数。
 
-#### Good use cases for Web Workers
+#### Web Worker 的最佳实践
 
 So far we’ve listed the strengths and limitations of Web Workers. Let’s see now what are the strongest use-cases for them:
 
