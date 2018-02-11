@@ -341,15 +341,15 @@ self.addEventListener('message', function(e) {
 
 * **Progressive Web App：** 当网络状态不是很理想时，PWA 仍需较快的加载速度。这就意味着 PWA 的数据需要被持久化到本地浏览器中。在此背景下，一些与 [IndexDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) 相似的 API 便应运而生了。从根本上来说，客户端一侧的存储是必须的。为在存取时不阻塞 UI 线程，这部分工作理应交给 Web Worker 完成。好吧，在 IndexDB 中你可以不使用 Web Worker，因为它提供的异步 API 也不会阻塞 UI。但是在这之前，IndexDB 提供的是同步API（可能会被再次引入），这种情况使用 Web Worker 还是非常有必要的。
 
-* **拼写检查：** 进行拼写检查的基本流程如下 — 程序首先从词典文件中读取一系列拼写正确的单词。整个词典会被解析为一个搜索树用于实际的文本搜索。当待测词语被输入后，程序会检查该词是否存在于之前建立的搜索树中。如果在搜索树中没有匹配到待测词语，程序会替换字符并测试新的词语是否是用户期待输入的，如果是则会返回该词语。整个检测过程可以被轻松 “下放” 给 Web Worker 完成，这样一来用户可以随意输入词语和句子so that the user can just type words and sentences without any blocking of the UI, while the worker performs all the searching and providing of suggestions.
+* **拼写检查：** 进行拼写检查的基本流程如下 — 程序首先从词典文件中读取一系列拼写正确的单词。整个词典会被解析为一个搜索树用于实际的文本搜索。当待测词语被输入后，程序会检查该词是否存在于之前建立的搜索树中。如果在搜索树中没有匹配到待测词语，程序会替换字符并测试新的词语是否是用户期待输入的，如果是则会返回该词语。整个检测过程可以被轻松 “下放” 给 Web Worker 完成，Worker 会完成所有的词语检索和词语联想的工作，这样一来用户可以随心输入词语和句子而不会阻塞 UI。
 
-Performance and reliability are very critical for us at [SessionStack](https://www.sessionstack.com/?utm_source=medium&utm_medium=source&utm_content=javascript-series-web-workers-outro). The reason why they’re so important is that once SessionStack is integrated into your web app, it starts recording everything from DOM changes and user interaction to network requests, unhandled exceptions and debug messages. All this data is transmitted to our servers in **real-time** which allows you to replay issues from your web apps as videos and see everything that happened to your users. This all takes place with minimum latency and no performance overhead for your app.
+对 [SessionStack](https://www.sessionstack.com/?utm_source=medium&utm_medium=source&utm_content=javascript-series-web-workers-outro) 来说，保持高性能和高可靠性是极其重要的. 持有这种理念的主要原因是，一旦集成 SessionStack 到你的应用后，它便开始记录从 DOM 变化、用户交互行为到网络请求、未捕获异常和 debug 信息的所有数据。收集到的跟踪数据会被 **实时** 发送到后台服务器，以视频的形式还原应用中出现的问题，帮助你从用户的角度重现现场。这一切功能的实现需要足够的快并且不会给你的应用带来任何性能上的负担。
 
-This is why we’re offloading (wherever it makes sense) logic from both our monitoring library and our player to Web Workers that are handling very CPU-intensive tasks like hashing to validate data integrity, rendering, etc.
+这就是为什么我们尽可能地把 SessionStack 中，值得优化的业务逻辑交给 Web Worker 完成的原因。诸如在监控核心库和播放器中，都包含了像 hash 数据完整性验证、渲染等 CPU 密集型任务。
 
-Web technologies constantly change and develop so We go the extra mile to ensure SessionStack is very lightweight and has zero performance impact on our users’ apps.
+Web 技术持续向前变更和发展，所以我们宁肯先行一步也要保证 SessionStack 是一个不会给用户 app 带来任何性能损耗的轻量级应用。
 
-There is a free plan if you’d like to [give SessionStack a try](https://www.sessionstack.com/?utm_source=medium&utm_medium=source&utm_content=javascript-series-web-workers-try-now).
+如果阁下愿意试试 SessionStack ，这里有一个[免费的试用计划](https://www.sessionstack.com/?utm_source=medium&utm_medium=source&utm_content=javascript-series-web-workers-try-now)。
 
 ![](https://cdn-images-1.medium.com/max/800/1*YKYHB1gwcVKDgZtAEnJjMg.png)
 
